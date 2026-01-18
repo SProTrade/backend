@@ -4,6 +4,7 @@ from courses.models import coursesmodel as Courses
 from modules.models import modulesmodel as Modules
 from lessons.models import lessonsmodel as Lessons
 from exercises.models import exercisesmodel as Exercises
+from exercises.models import Question, Choice
 import json
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 from rest_framework.response import Response
@@ -20,11 +21,11 @@ def get_user_info(request):
     try:
         user = Users.objects.get(telegram_id=telegram_id)
         return Response(data={"message": "User found.", "user": ({
-        'id' : str(user.id),
+        'id' : user.id,
         'telegram_id': user.telegram_id,
         'pocket_id': user.pocket_id,
         'is_registered': user.is_registered,
-        'balance': str(user.balance),
+        'balance': user.balance,
         'click_id': user.click_id
         })})
     
@@ -45,11 +46,11 @@ def create_user(request):
     user = Users.objects.filter(telegram_id=telegram_id).first()
     if user:
         return Response(data = {"message": "User already exists.", "user": ({
-        'id' : str(user.id),
+        'id' : user.id,
         'telegram_id': user.telegram_id,
         'pocket_id': user.pocket_id,
         'is_registered': user.is_registered,
-        'balance': str(user.balance),
+        'balance': user.balance,
         'click_id': user.click_id
         })}, status=HTTP_409_CONFLICT)
     
@@ -58,11 +59,11 @@ def create_user(request):
     user.generate_click_id()
     
     return Response(data={"message": "User created.", "user": ({
-        'id' : str(user.id),
-        'telegram_id': user.telegram_id,
+        'id' : user.id,
+        'telegram_id': int(user.telegram_id),
         'pocket_id': user.pocket_id,
         'is_registered': user.is_registered,
-        'balance': str(user.balance),
+        'balance': user.balance,
         'click_id': user.click_id,
         'click_id': user.click_id
         })}, status=HTTP_200_OK)
@@ -88,11 +89,11 @@ def update_user_pocketid(request):
         user.is_registered = True
         user.save()
         return Response(data={"message": "Pocket Option ID updated.", "user": ({
-        'id' : str(user.id),
+        'id' : user.id,
         'telegram_id': user.telegram_id,
         'pocket_id': user.pocket_id,
         'is_registered': user.is_registered,
-        'balance': str(user.balance),
+        'balance': user.balance,
         'click_id': user.click_id
         })}, status=HTTP_200_OK)
     
@@ -118,11 +119,11 @@ def update_user_balance(request):
         user.balance += dou(balance)
         user.save()
         return Response(data={"message": "Balance updated.", "user": ({
-        'id' : str(user.id),
+        'id' : user.id,
         'telegram_id': user.telegram_id,
         'pocket_id': user.pocket_id,
         'is_registered': user.is_registered,
-        'balance': str(user.balance),
+        'balance': user.balance,
         'click_id': user.click_id
         })}, status=HTTP_200_OK)
     
@@ -139,8 +140,7 @@ def get_courses_info(request):
     try:
         courses = Courses.objects.filter(is_published=True)
         Serializer = CoursesSerializer(courses, many = True)
-        print(Serializer.data)
-        return Response(data={"message": "Courses found.", "Courses": Serializer.data})
+        return Response(data={"message": "Courses found.", "сourses": Serializer.data})
     
     except Courses.DoesNotExist:
         return Response(data = {"message": "Courses not found."}, status=HTTP_404_NOT_FOUND)
@@ -155,8 +155,7 @@ def get_modules_info(request, course_id):
     try:
         modules = Modules.objects.filter(course_id=course_id, is_published=True)
         Serializer = ModulesSerializer(modules, many = True)
-        print(Serializer.data)
-        return Response(data={"message": "Module found.", "Module": Serializer.data})
+        return Response(data={"message": "Module found.", "modules": Serializer.data})
     
     except Modules.DoesNotExist:
         return Response(data = {"message": "Module not found."}, status=HTTP_404_NOT_FOUND)
@@ -171,27 +170,25 @@ def get_lessons_info(request, module_id):
     try:
         lessons = Lessons.objects.filter(module_id=module_id, is_published=True)
         Serializer = LessonsSerializer(lessons, many = True)
-        print(Serializer.data)
-        return Response(data={"message": "Lesson found.", "Lesson": Serializer.data})
+        return Response(data={"message": "Lesson found.", "lesson": Serializer.data})
     
     except Lessons.DoesNotExist:
         return Response(data = {"message": "Lesson not found."}, status=HTTP_404_NOT_FOUND)
 
 
-
-
 @api_view(['GET'])
 def get_exercises_info(request, module_id):
-    if request.method != 'GET':
-        return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
-    try:
-        exercises = Exercises.objects.filter(module_id=module_id, is_published=True)
-        Serializer = ExercisesSerializer(exercises, many = True)
-        print(Serializer.data)
-        return Response(data={"message": "Exercise found.", "Exercise": Serializer.data})
+    exercise = Exercises.objects.filter(module_id=module_id, is_published=True).first()
+
+    if not exercise:
+        return Response(data={"message": "Exercise not found."}, status=HTTP_404_NOT_FOUND)
+
+   
+    serializer = ExercisesSerializer(exercise)
     
-    except Exercises.DoesNotExist:
-        return Response(data = {"message": "Exercise not found."}, status=HTTP_404_NOT_FOUND)
-    
+    return Response(data={
+        "message": "Exercise found.", 
+        "exercise": serializer.data
+    })
 
 

@@ -14,3 +14,31 @@ class exercisesmodel(models.Model):
     class Meta:
         verbose_name = 'Тест'
         verbose_name_plural = 'Тести'
+
+
+class Question(models.Model):
+    exercise = models.ForeignKey(
+        'exercisesmodel', 
+        related_name='questions', 
+        on_delete=models.CASCADE
+    )
+    question_text = models.TextField(verbose_name="Текст питання")
+    
+    def __str__(self):
+        return self.question_text[:50]
+
+    class Meta:
+        verbose_name = 'Питання'
+        verbose_name_plural = 'Питання'
+
+class Choice(models.Model):
+    question = models.ForeignKey(
+        Question, 
+        related_name='choices', 
+        on_delete=models.CASCADE
+    )
+    choice_text = models.CharField(max_length=255, verbose_name="Варіант відповіді")
+    is_correct = models.BooleanField(default=False, verbose_name="Це правильна відповідь?")
+
+    def __str__(self):
+        return self.choice_text
