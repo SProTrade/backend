@@ -1,10 +1,15 @@
 from django.shortcuts import render, HttpResponse
-from users.models import Users  
+from users.models import Users
+from courses.models import coursesmodel as Courses 
+from modules.models import modulesmodel as Modules
+from lessons.models import lessonsmodel as Lessons
+from exercises.models import exercisesmodel as Exercises
 import json
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from decimal import Decimal as dou
+from .serializers import CoursesSerializer, ModulesSerializer, LessonsSerializer, ExercisesSerializer
 
 @api_view(['GET'])
 def get_user_info(request):
@@ -123,3 +128,70 @@ def update_user_balance(request):
     
     except Users.DoesNotExist:
         return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
+    
+
+
+
+@api_view(['GET'])
+def get_courses_info(request):
+    if request.method != 'GET':
+        return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
+    try:
+        courses = Courses.objects.filter(is_published=True)
+        Serializer = CoursesSerializer(courses, many = True)
+        print(Serializer.data)
+        return Response(data={"message": "Courses found.", "Courses": Serializer.data})
+    
+    except Courses.DoesNotExist:
+        return Response(data = {"message": "Courses not found."}, status=HTTP_404_NOT_FOUND)
+    
+
+
+
+@api_view(['GET'])
+def get_modules_info(request, course_id):
+    if request.method != 'GET':
+        return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
+    try:
+        modules = Modules.objects.filter(course_id=course_id, is_published=True)
+        Serializer = ModulesSerializer(modules, many = True)
+        print(Serializer.data)
+        return Response(data={"message": "Module found.", "Module": Serializer.data})
+    
+    except Modules.DoesNotExist:
+        return Response(data = {"message": "Module not found."}, status=HTTP_404_NOT_FOUND)
+    
+
+
+
+@api_view(['GET'])
+def get_lessons_info(request, module_id):
+    if request.method != 'GET':
+        return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
+    try:
+        lessons = Lessons.objects.filter(module_id=module_id, is_published=True)
+        Serializer = LessonsSerializer(lessons, many = True)
+        print(Serializer.data)
+        return Response(data={"message": "Lesson found.", "Lesson": Serializer.data})
+    
+    except Lessons.DoesNotExist:
+        return Response(data = {"message": "Lesson not found."}, status=HTTP_404_NOT_FOUND)
+
+
+
+
+@api_view(['GET'])
+def get_exercises_info(request, module_id):
+    if request.method != 'GET':
+        return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
+    try:
+        exercises = Exercises.objects.filter(module_id=module_id, is_published=True)
+        Serializer = ExercisesSerializer(exercises, many = True)
+        print(Serializer.data)
+        return Response(data={"message": "Exercise found.", "Exercise": Serializer.data})
+    
+    except Exercises.DoesNotExist:
+        return Response(data = {"message": "Exercise not found."}, status=HTTP_404_NOT_FOUND)
+    
+
+
