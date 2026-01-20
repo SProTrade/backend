@@ -104,6 +104,68 @@ components:
           items:
               $ref: '#/components/schemas/LessonItem'
 
+    ExerciseItem:
+      type: object
+      properties: 
+        id: 
+          type: integer
+          format: uuid
+        
+        title: 
+          type: string
+          example: string
+
+        questions:
+          type: array
+          items: 
+            $ref: '#/components/schemas/QuestionItem'
+      
+
+    ExercisesResponse:
+      type: object
+      properties: 
+        message: 
+          type: string
+          example: Exercise found.
+        
+        exercise: 
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseItem'
+
+      
+        
+    QuestionItem:
+      type: object
+      properties: 
+        id: 
+          type: integer
+        
+        question_text: 
+          type: string
+          example: string
+
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoicesItem'
+        
+
+    ChoicesItem:
+      type: object
+      properties: 
+        id: 
+          type: integer
+
+        choices_text: 
+          type: string
+          example: string
+
+        is_correct:
+          type: boolean
+          example: true
+  
+
     TradeBotResponse:
       type: object
       properties:
@@ -436,6 +498,40 @@ paths:
                       message:
                         type: string
                         example: "Lessons not found."
+
+
+
+  /api/exercises/module/{module_id}/:
+    get:
+      tags:
+        - exercises
+      summary: Список тестів за модулем  
+      parameters:
+        - name: module_id 
+          in: path
+          required: true 
+          schema:
+            type: string
+            format: uuid  
+            example: "e818661e-9306-4469-abf2-a58e4934933c"
+      responses:
+        '200':
+          description: Список тестів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExercisesResponse'
+        '404':
+          description: Тесту не знайдено
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Exercise not found."
 
 
   /api/tradebot/signal:
