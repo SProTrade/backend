@@ -6,20 +6,54 @@ from lessons.models import lessonsmodel as Lessons
 from exercises.models import exercisesmodel as Exercises
 from exercises.models import Question, Choice
 import json
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from decimal import Decimal as dou
+from .tokens import generate_tokens
 from .serializers import CoursesSerializer, ModulesSerializer, LessonsSerializer, ExercisesSerializer
+from rest_framework.permissions import AllowAny
+from tradebot.logic import get_data
+
+#__________------------ Views for TOKENS ------------__________#
+
+@api_view(['POST'])
+@permission_classes([]) 
+def custom_login(request):
+    telegram_id = request.data.get('telegram_id')
+   
+    user = Users.objects.filter(telegram_id=telegram_id).first()
+    
+    if user:
+        access_token, refresh_token = generate_tokens(user = user)
+        return Response({'access_token': access_token, 'refresh_token': refresh_token})
+    return Response({'error': 'Invalid user'}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) 
+def refresh_token(request):
+    refresh_token = request.data.get('refresh_token')
+    if not refresh_token:
+        return Response({'error': 'Refresh token is required'}, status=400)
+    try:
+        access_token, new_refresh_token = generate_tokens(refresh_token=refresh_token)
+        return Response({'access_token': access_token, 'refresh_token': new_refresh_token})
+    except ValueError as e:
+        return Response({'error': str(e)}, status=400)
+
+
+#__________------------ Views for USERS ------------__________#
+
+
 
 @api_view(['GET'])
 def get_user_info(request):
     if request.method != 'GET':
         return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
-    params = request.GET
-    telegram_id = params.get('telegram_id')
+
     try:
-        user = Users.objects.get(telegram_id=telegram_id)
+        user = request.user 
         return Response(data={"message": "User found.", "user": ({
         'id' : user.id,
         'telegram_id': user.telegram_id,
@@ -33,6 +67,7 @@ def get_user_info(request):
         return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
     
 @api_view(['POST'])
+@permission_classes([])
 def create_user(request):
     if request.method != 'POST':
         return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
@@ -71,6 +106,7 @@ def create_user(request):
 
 
 @api_view(['POST'])
+@permission_classes([])
 def update_user_pocketid(request):
     if request.method != 'POST':
         return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
@@ -101,8 +137,8 @@ def update_user_pocketid(request):
         return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
     
 
-
 @api_view(['POST'])
+@permission_classes([])
 def update_user_balance(request):
     if request.method != 'POST':
         return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
@@ -130,6 +166,7 @@ def update_user_balance(request):
     except Users.DoesNotExist:
         return Response(data = {"message": "User not found."}, status=HTTP_404_NOT_FOUND)
     
+#__________------------ Views for COURSES, MODULES, LESSONS, EXERCISES ------------__________#
 
 
 
@@ -192,3 +229,15 @@ def get_exercises_info(request, module_id):
     })
 
 
+
+#__________------------ Tradebot View ------------__________#
+
+@api_view(['POST'])
+def tradebot(request):
+    post_data = request.data
+    if not post_data.get('currency_pair') or not post_data.get('timeframe'):
+        return Response(data={"message": "currency_pair and timeframe are required."}, status=HTTP_400_BAD_REQUEST)
+    if post_data.get("timeframe") not in ["1m", "5m", "15m", "30m", "1h", "4h", "1D"]:
+        return Response(data={"message": "Invalid timeframe. Allowed values are: 1m, 5m, 15m, 30m, 1h, 4h, 1D."}, status=HTTP_400_BAD_REQUEST)
+    signal, price = get_data(post_data.get('currency_pair'), post_data.get('timeframe'))
+    return Response(data={"message": "Tradebot endpoint reached.", "signal": signal, "price": price['close']}, status=HTTP_200_OK)

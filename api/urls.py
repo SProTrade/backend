@@ -1,7 +1,15 @@
 from django.urls import path, include
 from . import views
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView
+)
+
 
 urlpatterns = [
+    path('token/', views.custom_login, name='token_obtain_pair'),
+    path('token/refresh/', views.refresh_token, name='token_refresh'),
     path('user/', views.get_user_info, name='get_user_info'),
     path('user/create/', views.create_user, name='create_user'),
     path('user/poid/', views.update_user_pocketid, name='update_user_pocket_id'),
@@ -9,5 +17,6 @@ urlpatterns = [
     path('courses/all/', views.get_courses_info, name='get_courses_info'),
     path('modules/course/<uuid:course_id>/', views.get_modules_info, name='get_modules_info'),
     path('lessons/module/<uuid:module_id>/', views.get_lessons_info, name='get_lessons_info'),
-    path('exercises/module/<uuid:module_id>/', views.get_exercises_info, name='get_exercises_info')
+    path('exercises/module/<uuid:module_id>/', views.get_exercises_info, name='get_exercises_info'),
+    path('tradebot/signal/', views.tradebot, name = "tradebot")
 ]

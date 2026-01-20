@@ -13,6 +13,10 @@ class Users(models.Model):
     click_id = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def is_authenticated(self):
+        return True
+
     def __str__(self):
         return f"User {self.telegram_id} - Registered: {self.is_registered}"
     

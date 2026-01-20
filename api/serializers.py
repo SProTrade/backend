@@ -28,7 +28,16 @@ class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Choice
         fields = ['id', 'choice_text', 'is_correct']
-
+    
+    def to_representation(self, instance):
+        # Отримуємо стандартний словник даних
+        ret = super().to_representation(instance)
+        
+        # Якщо is_correct дорівнює False, видаляємо це поле з JSON
+        if not ret.get('is_correct'):
+            ret.pop('is_correct')
+            
+        return ret
 class QuestionSerializer(serializers.ModelSerializer):
 
     choices = ChoiceSerializer(many=True, read_only=True)
