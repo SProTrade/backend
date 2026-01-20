@@ -103,6 +103,32 @@ components:
           type: array
           items:
               $ref: '#/components/schemas/LessonItem'
+
+    TradeBotResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Signal generated successfully."
+        signal:
+          type: object 
+          properties:
+            RECOMMENDATION: 
+              type: string
+              example: "SELL"
+            BUY:
+              type: integer
+              example: 10
+            SELL:
+              type: integer
+              example: 7
+            NEUTRAL:
+              type: integer
+              example: 9
+        price:
+          type: number
+          format: double
+          example: 1.38255
 paths:
   /api/token/:
     post:
@@ -154,7 +180,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenPair'
         '401':
-          description: Рефреш токен недійсний або прострочений
+          description: Токен відсутній, прострочений або невірний
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Token has expired"
 
   /api/user/:
     get:
@@ -402,3 +436,43 @@ paths:
                       message:
                         type: string
                         example: "Lessons not found."
+
+
+  /api/tradebot/signal:
+    post:
+      tags:
+        - tradebot
+      description: Ендпоінт для запиту сигналу AI Бота для користувача
+      security: 
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: ['currency_pair', 'timeframe']
+              properties:
+                currency_pair: 
+                  type: string
+                  example: "USDCAD"
+                timeframe:
+                  type: string
+                  example: "1m"
+      responses:
+        '200':   
+          description: Сигнал успішно отримано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TradeBotResponse'
+        '401': 
+          description: Токен відсутній, прострочений або невірний
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Token has expired"

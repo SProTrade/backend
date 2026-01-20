@@ -243,4 +243,4 @@ def tradebot(request):
     if post_data.get("timeframe") not in ["1m", "5m", "15m", "30m", "1h", "4h", "1D"]:
         return Response(data={"message": "Invalid timeframe. Allowed values are: 1m, 5m, 15m, 30m, 1h, 4h, 1D."}, status=HTTP_400_BAD_REQUEST)
     signal, price = get_data(post_data.get('currency_pair'), post_data.get('timeframe'))
-    return Response(data={"message": "Tradebot endpoint reached.", "signal": signal, "price": price['close']}, status=HTTP_200_OK)
+    return Response(data={"message": "Signal generated successfully.", "signal": signal, "price": price['close']}, status=HTTP_200_OK)
