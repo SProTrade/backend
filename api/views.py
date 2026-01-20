@@ -6,7 +6,7 @@ from lessons.models import lessonsmodel as Lessons
 from exercises.models import exercisesmodel as Exercises
 from exercises.models import Question, Choice
 import json
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND, HTTP_405_METHOD_NOT_ALLOWED, HTTP_409_CONFLICT
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from decimal import Decimal as dou
@@ -51,6 +51,9 @@ def refresh_token(request):
 def get_user_info(request):
     if request.method != 'GET':
         return Response(data = {"message": "Method not allowed"}, status=HTTP_405_METHOD_NOT_ALLOWED)
+
+    if request.headers.get('Authorization') is None or request.headers.get('Authorization') == "":
+        return Response(data = {"message": "Authorization header is missing."}, status=HTTP_401_UNAUTHORIZED)
 
     try:
         user = request.user 
@@ -101,7 +104,7 @@ def create_user(request):
         'balance': user.balance,
         'click_id': user.click_id,
         'click_id': user.click_id
-        })}, status=HTTP_200_OK)
+        })}, status=HTTP_201_CREATED)
 
 
 
@@ -195,7 +198,7 @@ def get_modules_info(request, course_id):
         return Response(data={"message": "Module found.", "modules": Serializer.data})
     
     except Modules.DoesNotExist:
-        return Response(data = {"message": "Module not found."}, status=HTTP_404_NOT_FOUND)
+        return Response(data = {"message": "Modules not found."}, status=HTTP_404_NOT_FOUND)
     
 
 
@@ -207,10 +210,10 @@ def get_lessons_info(request, module_id):
     try:
         lessons = Lessons.objects.filter(module_id=module_id, is_published=True)
         Serializer = LessonsSerializer(lessons, many = True)
-        return Response(data={"message": "Lesson found.", "lesson": Serializer.data})
+        return Response(data={"message": "Lessons found.", "lessons": Serializer.data})
     
     except Lessons.DoesNotExist:
-        return Response(data = {"message": "Lesson not found."}, status=HTTP_404_NOT_FOUND)
+        return Response(data = {"message": "Lessons not found."}, status=HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])

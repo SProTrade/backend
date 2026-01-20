@@ -1,0 +1,404 @@
+openapi: 3.0.0
+info:
+  title: SProTrade API
+  version: 1.3.0
+  description: API для сервісу **SProTrade** з повною підтримкою JWT (Login, Refresh, User Profile).
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbG..."
+        refresh_token:
+          type: string
+          example: "eyJhbG..."
+
+    UserStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        telegram_id:
+          type: integer
+        pocket_id:
+          type: integer
+        is_registered:
+          type: boolean
+        balance:
+          type: number
+          format: double
+        click_id: 
+          type: string
+
+    CourseItem:
+      type: object
+      properties:
+        title: {type: string}
+        description: {type: string}
+        duration: {type: integer}
+        lessons_quantity: {type: integer}
+        exercises_quantity: {type: integer}
+
+    CoursesResponse:
+      type: object
+      properties:
+        message: {type: string, example: "Courses found."}
+        сourses: 
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseItem'
+
+    ModuleItem:
+      type: object
+      properties:
+        title: {type: string}
+        description: {type: string}
+        duration: {type: integer}
+        lessons_quantity: {type: integer}
+
+    ModulesResponse:
+      type: object
+      properties:
+        message: {type: string, example: "Modules found."}
+        сourses: 
+          type: array
+          items:
+            $ref: '#/components/schemas/ModuleItem'
+
+
+    LessonItem:
+      type: object
+      properties: 
+        id: 
+          type: integer
+          format: uuid
+        
+        title: 
+          type: string
+          example: string
+        duration:
+          type: integer
+          example: integer
+        url_video:
+          type: string
+          example: url_video
+      
+    LessonsResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Lessons found."
+        lessons:
+          type: array
+          items:
+              $ref: '#/components/schemas/LessonItem'
+paths:
+  /api/token/:
+    post:
+      tags:
+        - auth
+      summary: Логін (Отримання токенів)
+      description: Обмін Telegram ID на пару Access та Refresh токенів.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [telegram_id]
+              properties:
+                telegram_id:
+                  type: integer
+                  example: 7773442
+      responses:
+        '200':
+          description: Токени успішно згенеровані
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+
+  /api/token/refresh/:
+    post:
+      tags:
+        - auth
+      summary: Оновлення Access токена (Rotate)
+      description: Приймає Refresh токен і видає нову пару (Access + Refresh).
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [refresh]
+              properties:
+                refresh:
+                  type: string
+                  example: "eyJhbG... (ваш старий рефреш)"
+      responses:
+        '200':
+          description: Нова пара токенів видана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Рефреш токен недійсний або прострочений
+
+  /api/user/:
+    get:
+      tags:
+        - user
+      summary: Профіль поточного юзера
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Успіх
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string 
+                    example: "User found"
+                  user: 
+                    $ref: '#/components/schemas/UserStatus'
+        '401':
+          description: Токен відсутній, прострочений або невірний
+          content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Token has expired"
+                  
+
+  /api/user/create:
+    post:
+      tags:
+        - user
+      summary: Реєстрація нового користувача
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [telegram_id]
+              properties:
+                telegram_id: {type: integer}
+      responses:
+        '201':
+          description: Користувача створено
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string 
+                    example: "User created."
+                  user: 
+                    $ref: '#/components/schemas/UserStatus'
+        '409':
+          description: Користувач вже існує
+          content: 
+            appllication/json:
+              schema:
+                type: object
+                properties:
+                  message: 
+                    type: string
+                    example: "User already exists."
+                  user:
+                    $ref: '#/components/schemas/UserStatus'
+  /api/user/poid:
+    post:
+      tags:
+        - user
+      summary: Оновити Pocket Option ID користувача
+
+      parameters:
+        - name: click_id
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "ecCcbMLP1M"
+        - name: pocket_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 2332233
+
+      responses:
+        '200':
+          description: Успіх
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Pocket Option ID updated."
+                      user:
+                        $ref: '#/components/schemas/UserStatus'
+        '404':
+          description: Користувача не знайдено
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User not found."
+                        
+
+
+
+  /api/user/balance:
+    post:
+      tags:
+        - user
+      summary: Оновити баланс користувача
+
+      parameters:
+        - name: telegram_id
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 7773442
+        - name: ammount
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: double
+            example: 50.0
+
+      responses:
+        '200':
+          description: Успіх
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User balance updated."
+                  user:
+                    $ref: '#/components/schemas/UserStatus'
+        '404':
+          description: Користувача не знайдено
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User not found."
+
+
+
+
+  /api/courses/all:
+    get:
+      tags:
+        - courses
+      summary: Список курсів
+      responses:
+        '200':
+          description: Список курсів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursesResponse'
+    
+  /api/modules/courses/{course_id}/:
+    get:
+      tags:
+        - modules
+      summary: Список курсів  
+      parameters:
+        - name: course_id 
+          in: path
+          required: true 
+          schema:
+            type: string
+            format: uuid  
+            example: "e818661e-9306-4469-abf2-a58e4934933c"
+      responses:
+        '200':
+          description: Список модулів
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModulesResponse'
+        '404':
+          description: Модулів не знайдено
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Modules not found."
+
+
+  /api/lessons/module/{module_id}/:
+    get:
+      tags:
+        - lessons
+      summary: Список уроків за модулем  
+      parameters:
+        - name: module_id 
+          in: path
+          required: true 
+          schema:
+            type: string
+            format: uuid  
+            example: "e818661e-9306-4469-abf2-a58e4934933c"
+      responses:
+        '200':
+          description: Список уроків
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonsResponse'
+        '404':
+          description: Уроків не знайдено
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Lessons not found."
